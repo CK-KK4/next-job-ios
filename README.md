@@ -2,7 +2,9 @@
 
 面向求职者的 AI 工具，基于 [PocketPal AI](https://github.com/a-ghorbani/pocketpal-ai) 修改，保留 MIT 许可证。
 
-**当前状态：源码已准备，尚未完成 Xcode 编译，还没有可安装 IPA 或 TestFlight 链接。**
+**当前状态：iOS 0.4.0（build 6）已通过云端编译与安装包校验。**
+
+[下载未签名 IPA](https://github.com/CK-KK4/next-job-ios/releases/tag/ios-v0.4.0-preview)，然后在 Windows 用 Sideloadly 和自己的免费 Apple 账户签名安装。没有 TestFlight 版本。
 
 打开 [iPhone 安装说明](IOS-使用说明.md) 查看免费云端打包与 Sideloadly 安装步骤。
 

@@ -1,6 +1,6 @@
 # 下一站 iOS 0.4.0 工程
 
-这是基于最新版安卓版功能同步的 **iOS 源码工程**。目前还没有成功编译的 IPA，也没有 TestFlight 链接。
+这是基于最新版安卓版功能同步的 **iOS 0.4.0 工程**。已通过云端编译并生成未签名 IPA，可从[发布页](https://github.com/CK-KK4/next-job-ios/releases/tag/ios-v0.4.0-preview)下载。使用免费 Apple 账户经 Sideloadly 安装；没有 TestFlight 链接。
 
 ## 这版有什么
 
@@ -35,4 +35,4 @@
 
 ## 当前验证状态
 
-已完成 JavaScript 层针对性测试；原生 Xcode 编译、Sideloadly 签名和 iPhone 操作尚未完成。实际结果以 `IOS-验证记录.md` 为准。按用户要求没有运行模拟器。
+已完成 22 项针对性测试、TypeScript 检查、Xcode Release 真机架构编译、内置模型与最终 IPA 哈希校验。Sideloadly 签名和 iPhone 操作尚未完成。实际结果以 `IOS-验证记录.md` 为准。按用户要求没有运行模拟器。
