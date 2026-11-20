@@ -89,6 +89,7 @@ delegate.write_text(text, encoding='utf-8', newline='\n')
 
 package_path = root / 'package.json'
 package = json.loads(package_path.read_text(encoding='utf-8'))
+package['version'] = '0.4.0'
 package['codegenConfig']['ios'] = {'modulesProvider': {'NextJobModule': 'NextJobModule'}}
 package_path.write_text(json.dumps(package, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 

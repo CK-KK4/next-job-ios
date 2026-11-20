@@ -1,0 +1,99 @@
+name: Build iOS Free IPA
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nextjob-ios-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    # Standard public-repository runner. No paid larger runner is requested.
+    runs-on: macos-26
+    timeout-minutes: 90
+    env:
+      HUSKY: '0'
+      PLUS_STORE_GATE: 'false'
+      E2E_BUILD: 'false'
+      NODE_OPTIONS: '--max-old-space-size=6144'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.21.0'
+      - name: Configure personal iOS build
+        run: |
+          set -euo pipefail
+          python3 scripts/configure-nextjob-ios.py
+          chmod +x scripts/*.sh
+          sudo xcode-select -s /Applications/Xcode.app
+          xcodebuild -version
+          xcrun -sdk iphoneos metal -v || xcodebuild -downloadComponent MetalToolchain
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2.3'
+          bundler-cache: true
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare yarn@1.22.22 --activate
+          yarn install --frozen-lockfile
+          INIT_CWD="$PWD" node node_modules/react-native-enriched-markdown/postinstall.mjs
+      - name: Check TypeScript and iOS audio parsing
+        run: |
+          set -euo pipefail
+          yarn typecheck
+          yarn test --runInBand --coverage=false src/services/__tests__/nextJobWav.test.ts src/services/__tests__/nextJobAudio.test.ts src/services/__tests__/nextJobAgents.test.ts src/utils/__tests__/nextJobImport.test.ts src/screens/JobHomeScreen/__tests__/JobHomeScreen.test.tsx
+      - name: Download and verify bundled models
+        run: python3 scripts/download-nextjob-models.py
+      - name: Install iOS dependencies
+        run: bundle exec pod install --project-directory=ios
+      - name: Compile iPhone app without paid signing
+        run: |
+          set -euo pipefail
+          xcodebuild -workspace ios/PocketPal.xcworkspace -scheme PocketPal \
+            -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="" 2>&1 | tee ios-build.log
+      - name: Verify and package unsigned IPA
+        run: |
+          set -euo pipefail
+          APP=build/Build/Products/Release-iphoneos/PocketPal.app
+          bash scripts/verify-ios-payload.sh "$APP" --require-marker
+          bash scripts/verify-plus-gate.sh "$APP" --ungated
+          python3 scripts/verify-nextjob-ios.py "$APP"
+          mkdir -p package/Payload
+          ditto "$APP" package/Payload/PocketPal.app
+          cd package
+          /usr/bin/zip -q -r ../next-job-ios-0.4.0-unsigned.ipa Payload
+          cd ..
+          unzip -t next-job-ios-0.4.0-unsigned.ipa | tail -1
+          shasum -a 256 next-job-ios-0.4.0-unsigned.ipa > SHA256SUMS.txt
+      - name: Download this artifact and sign it with Sideloadly on Windows
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-job-ios-0.4.0-unsigned
+          path: |
+            next-job-ios-0.4.0-unsigned.ipa
+            SHA256SUMS.txt
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
+      - name: Preserve compilation diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-diagnostics
+          path: ios-build.log
+          retention-days: 1
+          if-no-files-found: ignore
